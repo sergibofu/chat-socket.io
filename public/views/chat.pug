@@ -6,9 +6,15 @@ block title
 block content 
     header#banner
         h1 Chat 
-    section#chatroom
+    section#chatroom(hidden)
         div#messages 
         input#message(type="text", placeholder="Escriba su mensaje aqui")
         input#send(type="button", value="send")
 
-    
+    section#nameform.modal
+        div.backdrop
+            div.popup
+                div.pophead Escriba su nickname
+                div.popbody
+                input#nickname(type='text')
+                input#setname(type='button', value='Set Name') 
