@@ -1,49 +1,38 @@
+const Chat = require('./ChatBackend')
 exports.createSocket = (io) => {
-    let allUsers = []
-
-    const listenToNickname = (socket) => {
-        socket.on('set_nickname', (data) => {
-            let parsedData = JSON.parse(data)
-            socket.nickname = parsedData.nickname
-
-
-            socket.emit('message', JSON.stringify({
-                type: 'serverMessage',
-                message: `Bienvenido al chat ${socket.nickname}`,
-                nickname: 'chat'
-            }))
-        })
-    }
-
-    const listenToMessage = (socket) => {
-        socket.on('message', (message) => {
-            message = JSON.parse(message)
-            if(message.type == 'userMessage'){
-                console.log(socket.nickname)
-                message.nickname = socket.nickname
-                socket.broadcast.emit('message', JSON.stringify(message));
-                message.type = 'myMessage';
-                socket.emit('message', JSON.stringify(message))
-            }
-        })
-    }
-
-    const listenToDisconnect = (socket) => {
-        socket.on('disconnect', (message) => {
-            
-            console.log(socket.nickname + ' disconnected')
-        })
-    }
 
     
-    //cuando se conecte, realizamos las siguientes funciones
-    io.sockets.on('connection', (socket) => {
+let chatInfra = new Chat(io, '/chat_infra')
+chatInfra.registerCallback((socket) => {
+    socket.on('set_name', (data) => {
+        socket.nickname = data.nickname
+        socket.emit('name_set', data)     
+        socket.emit('message', JSON.stringify({
+            message: 'Welcome to the most interesting chatroom',
+            type: 'serverMessage'
+        }))   
+        socket.broadcast.emit('user_entered', data)
 
-        listenToNickname(socket)//handler evento set_nickname
+   })
+})
+chatInfra.connect()
 
-        listenToMessage(socket)//handler evento mensaje
+let chatCom = new Chat(io, '/chat_com')
+chatCom.registerCallback((socket) => {
+    socket.on('message', (message) => {
 
-        listenToDisconnect(socket)//handler evento desconexion
+       console.log(socket.id)
+        if(message.type == 'userMessage'){
+            message.nickname = chatInfra.getSocketParam('nickname')
+            socket.broadcast.emit('message', JSON.stringify(message))
+            message.type = 'myMessage'
+            socket.emit('message', JSON.stringify(message))
+        }
+    })
+})
 
-    });
+chatCom.connect()
+
+
+
 }
